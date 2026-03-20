@@ -1,0 +1,26 @@
+# Development Environment Configuration
+# This file defines all configurable parameters for the SRE Agent CDK stack in the dev environment
+
+# Agent Runtime Configuration (AgentCore Runtime construct)
+agent_runtime:
+  log_level: DEBUG                    # Agent runtime logging level: DEBUG, INFO, WARNING, ERROR
+  otel_logging_enabled: true          # Set to true to enable OTEL logging
+
+# Cognito Configuration
+cognito:
+  access_token_validity_minutes: 15   # OAuth2 access token expiry (5-1440 minutes / 24 hours)
+  oauth_cache:                        # OAuth token caching strategy for agent runtime
+    buffer_percent: 10.0              # Cache buffer as % of token lifetime (0.0-50.0)
+    buffer_min_seconds: 60            # Minimum cache buffer (seconds)
+    buffer_max_seconds: 300           # Maximum cache buffer (seconds, 5 minutes)
+
+# Observability Configuration
+observability:
+  enabled: true                       # Enable AgentCore tracing and observability
+
+# Model Configuration
+model:
+  model_id: "au.anthropic.claude-sonnet-4-5-20250929-v1:0"  # AU Claude Sonnet 4.5 cross-region inference profile
+  thinking_budget_tokens: 8000                              # Token budget for extended thinking (must be < model_max_tokens)
+  model_temperature: 1.0                                    # Must be 1.0 when extended thinking is enabled (Bedrock requirement)
+  model_max_tokens: 16000                                   # Maximum tokens to generate (must exceed thinking_budget_tokens)
