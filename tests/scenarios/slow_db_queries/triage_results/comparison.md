@@ -99,11 +99,25 @@ Free tier: first 5 GB scanned/month free.
 
 **Pricing source:** https://aws.amazon.com/bedrock/agentcore/pricing/
 
-Consumption-based, billed per second for active CPU + memory. The pricing page states "I/O wait periods incur no CPU charges if idle" - meaning time waiting for Bedrock inference and CloudWatch query results is excluded. For an LLM agent, the majority of wall-clock time is I/O wait.
+Consumption-based, billed per second for active CPU and peak memory consumed, with a 1-second minimum. I/O wait periods incur no CPU charges if idle — meaning time waiting for Bedrock inference and CloudWatch query results is excluded. For an LLM agent, the majority of wall-clock time is I/O wait.
 
 - Wall-clock: 51.012 seconds (from agent.py)
+- Assumed config: **2 vCPU / 4 GB memory**
 
-> **Note:** The AgentCore pricing page publishes no per-second rate table and no per-vCPU/GB-hour rates. The container spec (vCPU, memory) is managed by AgentCore and not visible to the user. **We cannot calculate a dollar amount for this service.** It is listed as "unknown" in the total below. Given that Bedrock is 98%+ of the bill, AgentCore compute cost does not materially affect the total regardless of its actual rate.
+| Resource | Rate |
+|---|---|
+| CPU | $0.0895 per vCPU-hour ($0.00002486 / vCPU-second) |
+| Memory | $0.00945 per GB-hour ($0.000002625 / GB-second) |
+
+**Active CPU estimate:** ~15 seconds of the 51s wall-clock (remainder is I/O wait on Bedrock and CloudWatch). This is conservative — actual active time may be lower. Memory is billed on peak consumption across the full session.
+
+| Item | Calculation | Cost |
+|---|---|---|
+| CPU (active) | 2 vCPU × 15s × $0.00002486 | $0.000746 |
+| Memory (peak, full wall-clock) | 4 GB × 51s × $0.000002625 | $0.000536 |
+| **Total AgentCore** | | **$0.001282** |
+
+Even billing the full 51s wall-clock for both CPU and memory yields $0.006594 — still under 5% of the Bedrock cost.
 
 ### 6. Bedrock - Claude Sonnet 4.5 (au cross-region inference)
 
@@ -136,11 +150,11 @@ Cache write front-loads cost in cycle 1; cycles 2–5 benefit from cheap cache r
 | Lambda | $0.0000085 | Bulk pricing API verified | 0.006% |
 | Cognito M2M | $0.0022500 | Bulk pricing API verified | 1.5% |
 | CloudWatch Logs Insights | $0.0002000 | Bulk pricing API verified | 0.1% |
-| AgentCore Runtime | unknown | No published rate table | - |
-| **Bedrock - Claude Sonnet 4.5** | **$0.150903** | **`config.py` + `agent.py` actual** | **98.4%** |
-| **Total (excl. AgentCore)** | **$0.153365** | | |
+| AgentCore Runtime (2 vCPU / 4 GB) | $0.0012820 | AgentCore pricing page | 0.8% |
+| **Bedrock - Claude Sonnet 4.5** | **$0.150903** | **`config.py` + `agent.py` actual** | **97.6%** |
+| **Total** | **$0.154647** | | |
 
-**Bedrock is 98.4% of the known total. AgentCore rate is unpublished but immaterial.**
+**Bedrock is ~98% of the total. AgentCore Runtime (2 vCPU / 4 GB, ~15s active CPU) adds ~$0.0013 per incident.**
 
 ---
 
@@ -188,7 +202,7 @@ The extra 3–5 minutes vs a "500 error" alert comes from the indirection: a CPU
 | Dimension | Human SRE | Agent |
 |---|---|---|
 | Time to diagnose | 38–60 min | **51 seconds** |
-| Cost per incident | $46–72 (without on-call premium) | **$0.15** (excl. AgentCore) |
+| Cost per incident | $46–72 (without on-call premium) | **$0.15** |
 | Red herrings | Investigated (5–10 min lost) | Dismissed immediately |
 | Availability | On-call rotation | Always on, no paging required |
 | Consistency | Varies by shift | Same reasoning every invocation |
@@ -200,14 +214,14 @@ The extra 3–5 minutes vs a "500 error" alert comes from the indirection: a CPU
 ## Monthly Projection
 
 SRE: $150K/yr = $72/hr, 45-min avg incident = $54/incident (without on-call premium).
-Agent: $0.153365 per incident (actual, excl. AgentCore).
+Agent: $0.154647 per incident.
 
 | Incidents / month | AWS Cost | Human SRE Cost | Saving |
 |---|---|---|---|
-| 10 | $1.53 | $540 | ~$538 |
-| 50 | $7.67 | $2,700 | ~$2,692 |
-| 200 | $30.67 | $10,800 | ~$10,769 |
-| 1,000 | $153.37 | $54,000 | ~$53,847 |
+| 10 | $1.55 | $540 | ~$538 |
+| 50 | $7.73 | $2,700 | ~$2,692 |
+| 200 | $30.93 | $10,800 | ~$10,769 |
+| 1,000 | $154.65 | $54,000 | ~$53,845 |
 
 > Agent handles first-response triage only. Senior SRE still required for fix execution, change management, and post-mortems.
 
