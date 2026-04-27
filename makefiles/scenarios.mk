@@ -17,3 +17,11 @@ scenario-1-inject:
 scenario-1-clean:
 	@echo "Cleaning up slow-db-queries scenario log groups..."
 	@$(PYTHON) tests/scenarios/slow_db_queries/cleanup.py
+
+# ==============================================================================
+# Evals - ToolSimulator
+# ==============================================================================
+
+eval-scenario-1:
+	@echo "Running Scenario 1 eval with ToolSimulator..."
+	@$(PYTHON) -m tests.evals.test_incident_triage
