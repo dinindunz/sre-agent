@@ -678,7 +678,7 @@ select {
             </div>
           </span>
         </div>
-        <div class="cap-field"><span class="rate">Excludes: ECR/S3 storage, network data transfer (standard EC2 rates)</span></div>
+
       </div>
     </div>
 
@@ -1298,7 +1298,29 @@ document.querySelectorAll('.capability input[type="checkbox"][data-cap]').forEac
   });
 });
 
-// Initial calculation
+// Apply config to sliders
+function initSliders() {
+  const s = CONFIG.sliders;
+  ['invocations', 'wallclock'].forEach(id => {
+    const el = document.getElementById(id);
+    const cfg = s[id];
+    el.min = cfg.min;
+    el.max = cfg.max;
+    el.value = cfg.default;
+    el.step = cfg.step;
+    // Update display value
+    const display = document.getElementById('v-' + id);
+    if (display) display.textContent = id === 'invocations' ? parseInt(cfg.default).toLocaleString() : cfg.default;
+    // Update range hints
+    const hints = el.parentElement.querySelectorAll('.field-hint');
+    if (hints.length === 2) {
+      hints[0].textContent = id === 'invocations' ? cfg.min.toLocaleString() : cfg.min + 's';
+      hints[1].textContent = id === 'invocations' ? cfg.max.toLocaleString() : cfg.max + 's';
+    }
+  });
+}
+
+initSliders();
 calculate();
 </script>
 </body>

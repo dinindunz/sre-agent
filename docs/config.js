@@ -56,6 +56,12 @@ const CONFIG = {
     identityToken: 0.010   // per 1,000 token/API key requests (non-AWS resources only)
   },
 
+  // ── Slider Ranges ──
+  sliders: {
+    invocations: { min: 1, max: 10000, default: 100, step: 1 },
+    wallclock:   { min: 5, max: 600,   default: 60,  step: 1 }
+  },
+
   // ── Complexity Presets ──
   presets: {
     light:    { prompt: 2000, newPerCycle: 100, outputPerCycle: 80,  cycles: 2 },
