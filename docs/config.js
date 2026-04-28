@@ -62,10 +62,49 @@ const CONFIG = {
     wallclock:   { min: 5, max: 600,   default: 60,  step: 1 }
   },
 
-  // ── Complexity Presets ──
+  // ── Use Case Derivation Constants ──
+  derivation: {
+    tokensPerTool: 350,          // avg tokens per tool definition in system prompt
+    userMessageTokens: 200,      // avg tokens for the initial user message
+    promptComplexity: {          // system prompt tokens (excluding tools + user msg)
+      simple: 500,
+      detailed: 1500,
+      complex: 3000
+    },
+    responseSize: {              // avg tool response tokens per cycle
+      small: 100,
+      medium: 300,
+      large: 800
+    },
+    reasoningDepth: {            // avg output tokens per cycle
+      low: 80,
+      medium: 150,
+      high: 300
+    }
+  },
+
+  // ── Complexity Presets (map to use-case inputs) ──
   presets: {
-    light:    { prompt: 2000, newPerCycle: 100, outputPerCycle: 80,  cycles: 2 },
-    standard: { prompt: 3500, newPerCycle: 150, outputPerCycle: 100, cycles: 5 },
-    heavy:    { prompt: 5000, newPerCycle: 250, outputPerCycle: 150, cycles: 8 }
+    light: {
+      promptComplexity: 'simple',
+      numTools: 3,
+      toolCalls: 2,
+      responseSize: 'small',
+      reasoningDepth: 'low'
+    },
+    standard: {
+      promptComplexity: 'detailed',
+      numTools: 5,
+      toolCalls: 4,
+      responseSize: 'medium',
+      reasoningDepth: 'medium'
+    },
+    heavy: {
+      promptComplexity: 'complex',
+      numTools: 12,
+      toolCalls: 8,
+      responseSize: 'large',
+      reasoningDepth: 'high'
+    }
   }
 };

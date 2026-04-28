@@ -450,6 +450,26 @@ select {
 }
 .tooltip-table td:first-child { font-weight: 600; color: #fff; }
 
+/* ── Derived section (collapsible) ── */
+.derived-section { margin-top: 4px; }
+.derived-toggle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8DA9C4;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.derived-toggle::-webkit-details-marker { display: none; }
+.derived-toggle::before {
+  content: '\25B6';
+  font-size: 9px;
+  transition: transform 0.2s;
+}
+details[open] .derived-toggle::before { transform: rotate(90deg); }
+
 /* ── Footer ── */
 .footer {
   padding: 20px 32px;
@@ -600,35 +620,102 @@ select {
 
     <div class="field">
       <div class="field-label">
-        <label>Initial context tokens (Cycle 1 input)</label>
+        <label>System prompt complexity</label>
       </div>
-      <input type="number" id="prompt-tokens" value="3500" min="0" max="100000" step="100">
-      <div class="field-hint">System prompt + tool definitions + first user message</div>
+      <div class="toggle-group" id="prompt-complexity">
+        <button class="toggle-btn" data-val="simple">Simple</button>
+        <button class="toggle-btn active" data-val="detailed">Detailed</button>
+        <button class="toggle-btn" data-val="complex">Complex</button>
+      </div>
+      <div class="field-hint">Simple ~500 tokens, Detailed ~1500, Complex ~3000</div>
     </div>
 
     <div class="field">
       <div class="field-label">
-        <label>New tokens / cycle</label>
+        <label>Tools available to the agent</label>
+        <span class="value" id="v-num-tools">5</span>
       </div>
-      <input type="number" id="new-tokens" value="150" min="0" max="10000" step="10">
-      <div class="field-hint">Tool results + new context added each cycle</div>
+      <input type="range" id="num-tools" min="1" max="30" value="5" step="1">
+      <div style="display:flex;justify-content:space-between"><span class="field-hint">1</span><span class="field-hint">30</span></div>
+      <div class="field-hint">Each tool definition adds ~350 tokens to initial context</div>
     </div>
 
     <div class="field">
       <div class="field-label">
-        <label>Output tokens / cycle</label>
+        <label>Tool calls per invocation</label>
+        <span class="value" id="v-tool-calls">4</span>
       </div>
-      <input type="number" id="output-tokens" value="100" min="0" max="10000" step="10">
-    </div>
-
-    <div class="field">
-      <div class="field-label">
-        <label>Cycles / invocation</label>
-        <span class="value" id="v-cycles">5</span>
-      </div>
-      <input type="range" id="cycles" min="1" max="20" value="5" step="1">
+      <input type="range" id="tool-calls" min="1" max="20" value="4" step="1">
       <div style="display:flex;justify-content:space-between"><span class="field-hint">1</span><span class="field-hint">20</span></div>
+      <div class="field-hint">Each tool call = 1 cycle + 1 final response cycle</div>
     </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Avg tool response size</label>
+      </div>
+      <div class="toggle-group" id="response-size">
+        <button class="toggle-btn" data-val="small">Small</button>
+        <button class="toggle-btn active" data-val="medium">Medium</button>
+        <button class="toggle-btn" data-val="large">Large</button>
+      </div>
+      <div class="field-hint">Small ~100 tokens, Medium ~300, Large ~800</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Reasoning depth</label>
+      </div>
+      <div class="toggle-group" id="reasoning-depth">
+        <button class="toggle-btn" data-val="low">Low</button>
+        <button class="toggle-btn active" data-val="medium">Medium</button>
+        <button class="toggle-btn" data-val="high">High</button>
+      </div>
+      <div class="field-hint">Low ~80, Medium ~150, High ~300 output tokens/cycle</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Derived values (collapsible) -->
+    <details class="derived-section">
+      <summary class="derived-toggle">Derived token values (advanced)</summary>
+      <div style="margin-top:12px;">
+        <div class="field">
+          <div class="field-label">
+            <label>Initial context tokens</label>
+            <span class="value" id="v-prompt-tokens">3500</span>
+          </div>
+          <input type="number" id="prompt-tokens" value="3500" min="0" max="100000" step="100">
+          <div class="field-hint">System prompt + tool definitions + user message (~200)</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <label>New tokens / cycle</label>
+            <span class="value" id="v-new-tokens">300</span>
+          </div>
+          <input type="number" id="new-tokens" value="300" min="0" max="10000" step="10">
+          <div class="field-hint">Tool results + new context added each cycle</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <label>Output tokens / cycle</label>
+            <span class="value" id="v-output-tokens">150</span>
+          </div>
+          <input type="number" id="output-tokens" value="150" min="0" max="10000" step="10">
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <label>Cycles / invocation</label>
+            <span class="value" id="v-cycles">5</span>
+          </div>
+          <input type="range" id="cycles" min="1" max="20" value="5" step="1">
+          <div style="display:flex;justify-content:space-between"><span class="field-hint">1</span><span class="field-hint">20</span></div>
+        </div>
+      </div>
+    </details>
 
     <div class="field">
       <div class="field-label"><label>Prompt Caching</label></div>
@@ -956,6 +1043,59 @@ const MODEL_PRICING = CONFIG.models;
 const AC = CONFIG.agentCore;
 const PRESETS = CONFIG.presets;
 const AUD_RATE = CONFIG.audRate;
+const D = CONFIG.derivation;
+
+// ── Derive token values from use-case inputs ──
+function deriveTokens() {
+  const promptComp = getToggleVal('prompt-complexity');
+  const numTools = ival('num-tools');
+  const toolCalls = ival('tool-calls');
+  const respSize = getToggleVal('response-size');
+  const reasonDepth = getToggleVal('reasoning-depth');
+
+  const promptTokens = D.promptComplexity[promptComp] + (numTools * D.tokensPerTool) + D.userMessageTokens;
+  const newPerCycle = D.responseSize[respSize];
+  const outputPerCycle = D.reasoningDepth[reasonDepth];
+  const cycles = toolCalls + 1; // +1 for final response
+
+  // Update derived fields
+  document.getElementById('prompt-tokens').value = promptTokens;
+  document.getElementById('v-prompt-tokens').textContent = promptTokens.toLocaleString();
+  document.getElementById('new-tokens').value = newPerCycle;
+  document.getElementById('v-new-tokens').textContent = newPerCycle;
+  document.getElementById('output-tokens').value = outputPerCycle;
+  document.getElementById('v-output-tokens').textContent = outputPerCycle;
+  document.getElementById('cycles').value = cycles;
+  document.getElementById('v-cycles').textContent = cycles;
+
+  calculate();
+}
+
+// ── Apply a preset to the use-case inputs ──
+function applyPreset(presetKey) {
+  const p = PRESETS[presetKey];
+  if (!p) return;
+
+  // Set toggle buttons
+  setToggle('prompt-complexity', p.promptComplexity);
+  setToggle('response-size', p.responseSize);
+  setToggle('reasoning-depth', p.reasoningDepth);
+
+  // Set sliders
+  document.getElementById('num-tools').value = p.numTools;
+  document.getElementById('v-num-tools').textContent = p.numTools;
+  document.getElementById('tool-calls').value = p.toolCalls;
+  document.getElementById('v-tool-calls').textContent = p.toolCalls;
+
+  deriveTokens();
+}
+
+function setToggle(groupId, val) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+}
 
 // ── State helpers ──
 function getToggleVal(groupId) {
@@ -1245,29 +1385,37 @@ document.querySelectorAll('input[type="number"]').forEach(el => {
 // Select
 document.getElementById('model').addEventListener('change', calculate);
 
-// Toggle groups
+// Toggle groups — use-case inputs trigger derivation, others trigger calculate
+const derivationGroups = ['prompt-complexity', 'response-size', 'reasoning-depth'];
 document.querySelectorAll('.toggle-group').forEach(group => {
   group.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      calculate();
+      if (derivationGroups.includes(group.id)) {
+        deriveTokens();
+      } else {
+        calculate();
+      }
     });
+  });
+});
+
+// Use-case sliders trigger derivation
+['num-tools', 'tool-calls'].forEach(id => {
+  const el = document.getElementById(id);
+  const display = document.getElementById('v-' + id);
+  el.addEventListener('input', () => {
+    display.textContent = el.value;
+    deriveTokens();
   });
 });
 
 // Presets
 document.getElementById('preset').addEventListener('click', (e) => {
   const btn = e.target.closest('.toggle-btn');
-  if (!btn) return;
-  const p = PRESETS[btn.dataset.val];
-  if (!p) return;
-  document.getElementById('prompt-tokens').value = p.prompt;
-  document.getElementById('new-tokens').value = p.newPerCycle;
-  document.getElementById('output-tokens').value = p.outputPerCycle;
-  document.getElementById('cycles').value = p.cycles;
-  document.getElementById('v-cycles').textContent = p.cycles;
-  calculate();
+  if (!btn || !btn.dataset.val) return;
+  applyPreset(btn.dataset.val);
 });
 
 // Human comparison toggle + sliders
@@ -1321,7 +1469,7 @@ function initSliders() {
 }
 
 initSliders();
-calculate();
+applyPreset('standard');
 </script>
 </body>
 </html>
