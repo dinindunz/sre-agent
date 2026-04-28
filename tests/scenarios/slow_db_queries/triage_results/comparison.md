@@ -147,7 +147,7 @@ Cache write front-loads cost in cycle 1; cycles 2–5 benefit from cheap cache r
 | Service | Cost | Source | % of total |
 |---|---|---|---|
 | API Gateway | $0.0000035 | WebFetch verified | 0.002% |
-| Lambda | $0.0000085 | Bulk pricing API verified | 0.006% |
+| Lambda | $0.0000085 | Bulk pricing API verified | 0.005% |
 | Cognito M2M | $0.0022500 | Bulk pricing API verified | 1.5% |
 | CloudWatch Logs Insights | $0.0002000 | Bulk pricing API verified | 0.1% |
 | AgentCore Runtime (2 vCPU / 4 GB) | $0.0012820 | AgentCore pricing page | 0.8% |
