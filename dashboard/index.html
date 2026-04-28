@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bedrock Agent Cost Calculator</title>
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #F0F4F8;
+  color: #0B2545;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background: #0B2545;
+  color: #fff;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.header svg { flex-shrink: 0; }
+.header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+.header .subtitle { font-size: 13px; color: #8DA9C4; margin-left: auto; }
+
+/* ── Layout ── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  padding: 24px 32px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+@media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+/* ── Cards ── */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(11,37,69,0.08), 0 4px 12px rgba(11,37,69,0.04);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #0B2545;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .icon { font-size: 16px; }
+
+/* ── Form Controls ── */
+.field { margin-bottom: 18px; }
+.field:last-child { margin-bottom: 0; }
+.field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.field-label label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #344E6A;
+}
+.field-label .value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0B2545;
+  font-variant-numeric: tabular-nums;
+}
+.field-hint {
+  font-size: 11px;
+  color: #8DA9C4;
+  margin-top: 2px;
+}
+
+/* Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #D6E4F0;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0B2545;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+/* Number inputs */
+input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D6E4F0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0B2545;
+  background: #F8FAFC;
+  text-align: right;
+}
+input[type="number"]:focus {
+  outline: none;
+  border-color: #0B2545;
+  box-shadow: 0 0 0 2px rgba(11,37,69,0.1);
+}
+
+/* Select */
+select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D6E4F0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0B2545;
+  background: #F8FAFC;
+  cursor: pointer;
+}
+
+/* Toggle buttons */
+.toggle-group {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #D6E4F0;
+}
+.toggle-btn {
+  flex: 1;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  background: #fff;
+  color: #344E6A;
+  border: none;
+  border-right: 1px solid #D6E4F0;
+  transition: all 0.15s;
+}
+.toggle-btn:last-child { border-right: none; }
+.toggle-btn.active {
+  background: #0B2545;
+  color: #fff;
+}
+.toggle-btn:hover:not(.active) {
+  background: #F0F4F8;
+}
+
+/* ── AgentCore capability toggles ── */
+.capability {
+  border: 1px solid #E8EFF5;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.capability:last-child { margin-bottom: 0; }
+.capability-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.capability-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0B2545;
+}
+.capability-cost {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8DA9C4;
+  font-variant-numeric: tabular-nums;
+}
+.capability-cost.has-cost { color: #0B2545; }
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute;
+  inset: 0;
+  background: #D6E4F0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.switch .slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  bottom: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.switch input:checked + .slider { background: #0B2545; }
+.switch input:checked + .slider::before { transform: translateX(16px); }
+
+.capability-fields {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #E8EFF5;
+  display: none;
+}
+.capability.active .capability-fields { display: block; }
+.cap-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.cap-field:last-child { margin-bottom: 0; }
+.cap-field label { font-size: 12px; color: #344E6A; }
+.cap-field input[type="number"] {
+  width: 80px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.cap-field .rate {
+  font-size: 11px;
+  color: #8DA9C4;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: #E8EFF5;
+  margin: 16px 0;
+}
+
+/* ── KPI Summary Bar ── */
+.kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  padding: 20px 32px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+@media (max-width: 1100px) {
+  .kpi-bar { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .kpi-bar { grid-template-columns: repeat(2, 1fr); }
+}
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 18px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(11,37,69,0.08);
+}
+.kpi-card.highlight {
+  background: #E63B5A;
+  color: #fff;
+}
+.kpi-card.highlight .kpi-label { color: rgba(255,255,255,0.8); }
+.kpi-card.highlight .kpi-sub { color: rgba(255,255,255,0.7); }
+.kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #344E6A;
+  margin-top: 4px;
+}
+.kpi-sub {
+  font-size: 11px;
+  color: #8DA9C4;
+  margin-top: 2px;
+}
+
+/* ── Breakdown Section ── */
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 0 32px 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+@media (max-width: 1100px) { .breakdown-grid { grid-template-columns: 1fr; } }
+
+.breakdown-table { width: 100%; border-collapse: collapse; }
+.breakdown-table th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8DA9C4;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 2px solid #E8EFF5;
+}
+.breakdown-table th:not(:first-child) { text-align: right; }
+.breakdown-table td {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #F0F4F8;
+  font-variant-numeric: tabular-nums;
+}
+.breakdown-table td:not(:first-child) { text-align: right; }
+.breakdown-table tr.total td {
+  font-weight: 700;
+  border-top: 2px solid #0B2545;
+  border-bottom: none;
+}
+.breakdown-table .bar-cell { width: 120px; }
+.mini-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #D6E4F0;
+  overflow: hidden;
+}
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #0B2545;
+  transition: width 0.3s;
+}
+.mini-bar-fill.bedrock { background: #E63B5A; }
+
+/* Token flow table */
+.cycle-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cycle-table th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8DA9C4;
+  text-align: right;
+  padding: 6px 8px;
+  border-bottom: 2px solid #E8EFF5;
+}
+.cycle-table th:first-child { text-align: left; }
+.cycle-table td {
+  padding: 6px 8px;
+  text-align: right;
+  border-bottom: 1px solid #F0F4F8;
+  font-variant-numeric: tabular-nums;
+}
+.cycle-table td:first-child { text-align: left; font-weight: 600; }
+.cycle-table tr.total td { font-weight: 700; border-top: 2px solid #0B2545; }
+
+/* ── Info tooltip ── */
+.info-trigger {
+  position: relative;
+  display: inline-block;
+  margin-left: 6px;
+}
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #D6E4F0;
+  color: #0B2545;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.info-icon:hover { background: #0B2545; color: #fff; }
+.info-tooltip {
+  display: none;
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  background: #0B2545;
+  color: #D6E4F0;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 30px rgba(11,37,69,0.3);
+  z-index: 1000;
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.info-trigger:hover .info-tooltip { display: block; }
+.tooltip-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.info-tooltip p { margin-bottom: 8px; color: #B8CCE0; }
+.info-tooltip strong { color: #fff; }
+.tooltip-code {
+  background: rgba(0,0,0,0.25);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8DA9C4;
+  margin-bottom: 10px;
+}
+.tooltip-summary { font-size: 11px; color: #8DA9C4; margin-bottom: 0; }
+.tooltip-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.tooltip-table th {
+  font-size: 11px; font-weight: 700; color: #8DA9C4; text-align: left;
+  padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.tooltip-table td {
+  font-size: 11px; color: #B8CCE0; padding: 6px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.tooltip-table td:first-child { font-weight: 600; color: #fff; }
+
+/* ── Footer ── */
+.footer {
+  padding: 20px 32px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.footer .card { background: #F8FAFC; border: 1px solid #E8EFF5; }
+.footer-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0B2545;
+  margin-bottom: 8px;
+}
+.footer-text {
+  font-size: 11px;
+  color: #8DA9C4;
+  line-height: 1.6;
+}
+.footer-text a { color: #0B2545; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#E63B5A"/><path d="M8 14l4 4 8-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <h1>Bedrock Agent Cost Calculator</h1>
+  <span class="subtitle">Estimate per-invocation costs for any agent use case on AWS Bedrock</span>
+</div>
+
+<!-- 3-Panel Grid -->
+<div class="grid">
+
+  <!-- Panel 1: Agent Configuration -->
+  <div class="card">
+    <div class="card-title"><span class="icon">&#9881;</span> Agent Configuration</div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Invocations / month</label>
+        <span class="value" id="v-invocations">100</span>
+      </div>
+      <input type="range" id="invocations" min="1" max="10000" value="100" step="1">
+      <div style="display:flex;justify-content:space-between"><span class="field-hint">1</span><span class="field-hint">10,000</span></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Wall-clock / invocation (s)</label>
+        <span class="value" id="v-wallclock">60</span>
+      </div>
+      <input type="range" id="wallclock" min="5" max="600" value="60" step="1">
+      <div style="display:flex;justify-content:space-between"><span class="field-hint">5s</span><span class="field-hint">600s</span></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Active CPU ratio (%)
+          <span class="info-trigger">
+            <span class="info-icon">?</span>
+            <div class="info-tooltip" style="width:400px;left:0;transform:none;">
+              <div class="tooltip-title">Active Resource Consumption</div>
+              <p>AgentCore Runtime only charges for <strong>active CPU consumption</strong>. Unlike traditional compute that charges for pre-allocated resources, I/O wait and idle time is free.</p>
+              <p>Agentic workloads typically spend <strong>30-70% of time in I/O wait</strong> (waiting for LLM responses, tool/API calls, or database queries). You pay nothing for CPU during these periods.</p>
+              <p>CPU is billed per second on actual consumption. Memory is billed on <strong>peak consumption</strong> up to that second (128 MB minimum). Billing spans from microVM boot through shutdown, including system overhead.</p>
+              <p class="tooltip-summary">A 30% ratio means 70% of wall-clock is I/O wait &mdash; typical for LLM agents.</p>
+            </div>
+          </span>
+        </label>
+        <span class="value" id="v-cpuratio">30%</span>
+      </div>
+      <input type="range" id="cpuratio" min="5" max="80" value="30" step="1">
+      <div style="display:flex;justify-content:space-between"><span class="field-hint">5%</span><span class="field-hint">80%</span></div>
+      <div class="field-hint">Agentic workloads typically spend 30-70% of time in I/O wait. You only pay for active CPU.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Compare with human cost</label>
+        <label class="switch"><input type="checkbox" id="human-toggle"><span class="slider"></span></label>
+      </div>
+    </div>
+    <div id="human-fields" style="display:none;">
+      <div class="field">
+        <div class="field-label">
+          <label>Hourly rate ($)</label>
+          <span class="value" id="v-humanrate">$72</span>
+        </div>
+        <input type="range" id="human-rate" min="40" max="300" value="72" step="1">
+        <div style="display:flex;justify-content:space-between"><span class="field-hint">$40</span><span class="field-hint">$300</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">
+          <label>Time per task (min)</label>
+          <span class="value" id="v-humantime">45</span>
+        </div>
+        <input type="range" id="human-time" min="5" max="240" value="45" step="5">
+        <div style="display:flex;justify-content:space-between"><span class="field-hint">5 min</span><span class="field-hint">4 hrs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 2: LLM Inference -->
+  <div class="card">
+    <div class="card-title"><span class="icon">&#9889;</span> LLM Inference (Bedrock)</div>
+
+    <div class="field">
+      <div class="field-label"><label>Model</label></div>
+      <select id="model">
+        <option value="sonnet46">Claude Sonnet 4.6</option>
+        <option value="opus46">Claude Opus 4.6</option>
+        <option value="haiku45">Claude Haiku 4.5</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Inference Type
+          <span class="info-trigger">
+            <span class="info-icon">?</span>
+            <div class="info-tooltip" style="width:420px;left:0;transform:none;">
+              <div class="tooltip-title">Cross-region Inference Types</div>
+              <p><strong>Global Cross-region:</strong> Routes requests to the nearest available region worldwide for optimal latency and availability. Lower price point but data may be processed outside your geography.</p>
+              <p><strong>Geo &amp; In-region:</strong> Restricts inference to regions within your geography (e.g. Asia Pacific for Sydney). ~10% higher cost but keeps data within your geographic boundary for compliance and data residency requirements.</p>
+              <p class="tooltip-summary">Both are on-demand with no provisioned capacity. Prices shown are for Asia Pacific (Sydney) region selection.</p>
+            </div>
+          </span>
+        </label>
+      </div>
+      <div class="toggle-group" id="inference-type">
+        <button class="toggle-btn active" data-val="global">Global Cross-region</button>
+        <button class="toggle-btn" data-val="geo">Geo &amp; In-region</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label>Complexity Preset</label></div>
+      <div class="toggle-group" id="preset">
+        <button class="toggle-btn" data-val="light">Light</button>
+        <button class="toggle-btn active" data-val="standard">Standard</button>
+        <button class="toggle-btn" data-val="heavy">Heavy</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Initial context tokens (Cycle 1 input)</label>
+      </div>
+      <input type="number" id="prompt-tokens" value="3500" min="0" max="100000" step="100">
+      <div class="field-hint">System prompt + tool definitions + first user message</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>New tokens / cycle</label>
+      </div>
+      <input type="number" id="new-tokens" value="150" min="0" max="10000" step="10">
+      <div class="field-hint">Tool results + new context added each cycle</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Output tokens / cycle</label>
+      </div>
+      <input type="number" id="output-tokens" value="100" min="0" max="10000" step="10">
+    </div>
+
+    <div class="field">
+      <div class="field-label">
+        <label>Cycles / invocation</label>
+        <span class="value" id="v-cycles">5</span>
+      </div>
+      <input type="range" id="cycles" min="1" max="20" value="5" step="1">
+      <div style="display:flex;justify-content:space-between"><span class="field-hint">1</span><span class="field-hint">20</span></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label>Prompt Caching</label></div>
+      <div class="toggle-group" id="caching">
+        <button class="toggle-btn" data-val="off">Off</button>
+        <button class="toggle-btn active" data-val="5min">5-min TTL</button>
+        <button class="toggle-btn" data-val="1hr">1-hour TTL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 3: AgentCore Capabilities -->
+  <div class="card">
+    <div class="card-title"><span class="icon">&#9648;</span> AgentCore Capabilities</div>
+
+    <!-- Runtime (always on) -->
+    <div class="capability active" id="cap-runtime">
+      <div class="capability-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="switch"><input type="checkbox" checked disabled><span class="slider"></span></label>
+          <span class="capability-name">Runtime</span>
+        </div>
+        <span class="capability-cost has-cost" id="cost-runtime">$0.00</span>
+      </div>
+      <div class="capability-fields" style="display:block">
+        <div class="cap-field">
+          <label>vCPU</label>
+          <input type="number" id="rt-vcpu" value="2" min="1" max="8" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Memory (GB)</label>
+          <input type="number" id="rt-mem" value="4" min="1" max="16" step="1">
+        </div>
+        <div class="cap-field">
+          <span class="info-trigger">
+            <span class="info-icon">?</span>
+            <div class="info-tooltip" style="width:440px;right:0;left:auto;transform:none;">
+              <div class="tooltip-title">How Runtime Cost is Calculated</div>
+              <table class="tooltip-table">
+                <thead><tr><th></th><th>CPU cost</th><th>Memory cost</th></tr></thead>
+                <tbody>
+                  <tr><td>Formula</td><td>vCPU &times; wall-clock &times; ratio &times; rate</td><td>GB &times; wall-clock &times; rate</td></tr>
+                  <tr><td>Wall-clock</td><td>Yes, but scaled by ratio</td><td>Yes, full duration</td></tr>
+                </tbody>
+              </table>
+              <p style="margin-top:10px;">CPU is only billed for active consumption &mdash; I/O wait is free. Memory is billed on peak consumption for the <strong>entire session</strong> (boot &rarr; shutdown), even during idle.</p>
+            </div>
+          </span>
+        </div>
+        <div class="cap-field"><span class="rate">Excludes: ECR/S3 storage, network data transfer (standard EC2 rates)</span></div>
+      </div>
+    </div>
+
+    <!-- Browser Tool -->
+    <div class="capability" id="cap-browser">
+      <div class="capability-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="switch"><input type="checkbox" data-cap="browser"><span class="slider"></span></label>
+          <span class="capability-name">Browser Tool</span>
+        </div>
+        <span class="capability-cost" id="cost-browser">-</span>
+      </div>
+      <div class="capability-fields">
+        <div class="cap-field">
+          <label>vCPU</label>
+          <input type="number" id="br-vcpu" value="2" min="1" max="8" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Memory (GB)</label>
+          <input type="number" id="br-mem" value="4" min="1" max="16" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Active seconds / invocation</label>
+          <input type="number" id="br-secs" value="30" min="1" max="600" step="1">
+        </div>
+        <div class="cap-field"><span class="rate">CPU: $0.0895/vCPU-hr &middot; Mem: $0.00945/GB-hr</span></div>
+      </div>
+    </div>
+
+    <!-- Code Interpreter -->
+    <div class="capability" id="cap-code">
+      <div class="capability-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="switch"><input type="checkbox" data-cap="code"><span class="slider"></span></label>
+          <span class="capability-name">Code Interpreter</span>
+        </div>
+        <span class="capability-cost" id="cost-code">-</span>
+      </div>
+      <div class="capability-fields">
+        <div class="cap-field">
+          <label>vCPU</label>
+          <input type="number" id="ci-vcpu" value="2" min="1" max="8" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Memory (GB)</label>
+          <input type="number" id="ci-mem" value="4" min="1" max="16" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Active seconds / invocation</label>
+          <input type="number" id="ci-secs" value="15" min="1" max="600" step="1">
+        </div>
+        <div class="cap-field"><span class="rate">CPU: $0.0895/vCPU-hr &middot; Mem: $0.00945/GB-hr</span></div>
+      </div>
+    </div>
+
+    <!-- Gateway -->
+    <div class="capability" id="cap-gateway">
+      <div class="capability-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="switch"><input type="checkbox" data-cap="gateway"><span class="slider"></span></label>
+          <span class="capability-name">Gateway</span>
+        </div>
+        <span class="capability-cost" id="cost-gateway">-</span>
+      </div>
+      <div class="capability-fields">
+        <div class="cap-field">
+          <label>API calls / invocation</label>
+          <input type="number" id="gw-api" value="5" min="1" max="1000" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Search calls / invocation</label>
+          <input type="number" id="gw-search" value="0" min="0" max="1000" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Tools indexed (monthly)</label>
+          <input type="number" id="gw-tools" value="10" min="0" max="10000" step="1">
+        </div>
+        <div class="cap-field"><span class="rate">API: $0.005/1K &middot; Search: $0.025/1K &middot; Index: $0.02/100 tools/mo</span></div>
+      </div>
+    </div>
+
+    <!-- Memory -->
+    <div class="capability" id="cap-memory">
+      <div class="capability-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="switch"><input type="checkbox" data-cap="memory"><span class="slider"></span></label>
+          <span class="capability-name">Memory</span>
+        </div>
+        <span class="capability-cost" id="cost-memory">-</span>
+      </div>
+      <div class="capability-fields">
+        <div class="cap-field">
+          <label>Short-term events / invocation</label>
+          <input type="number" id="mem-events" value="5" min="0" max="1000" step="1">
+        </div>
+        <div class="cap-field">
+          <label>Long-term records stored (monthly)</label>
+          <input type="number" id="mem-records" value="100" min="0" max="100000" step="10">
+        </div>
+        <div class="cap-field">
+          <label>Retrievals / invocation</label>
+          <input type="number" id="mem-retrieval" value="2" min="0" max="1000" step="1">
+        </div>
+        <div class="cap-field">
+          <div class="toggle-group" id="mem-strategy" style="width:100%">
+            <button class="toggle-btn active" data-val="builtin">Built-in ($0.75/1K/mo)</button>
+            <button class="toggle-btn" data-val="self">Self-managed ($0.25/1K/mo)</button>
+          </div>
+        </div>
+        <div class="cap-field"><span class="rate">Short-term: $0.25/1K events &middot; Retrieval: $0.50/1K</span></div>
+      </div>
+    </div>
+
+    <!-- Identity - free note -->
+    <div style="margin-top:12px;padding:8px 12px;background:#F0F4F8;border-radius:6px;">
+      <span style="font-size:11px;color:#8DA9C4;">
+        <strong>Identity</strong> &mdash; free when used via Runtime or Gateway.
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Summary Bar -->
+<div class="kpi-bar" id="kpi-bar">
+  <div class="kpi-card">
+    <div class="kpi-value" id="kpi-bedrock">$0.00</div>
+    <div class="kpi-label">Bedrock / Invocation</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value" id="kpi-agentcore">$0.00</div>
+    <div class="kpi-label">AgentCore / Invocation</div>
+  </div>
+  <div class="kpi-card highlight">
+    <div class="kpi-value" id="kpi-total">$0.00</div>
+    <div class="kpi-label">Total / Invocation</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value" id="kpi-monthly">$0.00</div>
+    <div class="kpi-label">Monthly Cost</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value" id="kpi-annual">$0.00</div>
+    <div class="kpi-label">Annual Cost</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value" id="kpi-pct">0%</div>
+    <div class="kpi-label">Bedrock % of Total</div>
+    <div class="kpi-sub">LLM inference share</div>
+  </div>
+</div>
+
+<!-- Human Comparison Bar (hidden by default) -->
+<div class="kpi-bar" id="human-bar" style="display:none;">
+  <div class="kpi-card" style="border:2px solid #D6E4F0;">
+    <div class="kpi-value" id="kpi-human-task">$0</div>
+    <div class="kpi-label">Human / Task</div>
+    <div class="kpi-sub" id="kpi-human-task-sub">0 min @ $0/hr</div>
+  </div>
+  <div class="kpi-card" style="border:2px solid #D6E4F0;">
+    <div class="kpi-value" id="kpi-agent-task">$0</div>
+    <div class="kpi-label">Agent / Task</div>
+    <div class="kpi-sub" id="kpi-agent-task-sub">in AUD</div>
+  </div>
+  <div class="kpi-card highlight" style="background:#0B2545;">
+    <div class="kpi-value" id="kpi-ratio">0x</div>
+    <div class="kpi-label">Cheaper</div>
+    <div class="kpi-sub" id="kpi-ratio-sub">agent vs human</div>
+  </div>
+  <div class="kpi-card highlight">
+    <div class="kpi-value" id="kpi-saving-monthly">$0</div>
+    <div class="kpi-label">Monthly Saving</div>
+    <div class="kpi-sub" id="kpi-saving-monthly-sub">0 invocations</div>
+  </div>
+  <div class="kpi-card highlight">
+    <div class="kpi-value" id="kpi-saving-annual">$0</div>
+    <div class="kpi-label">Annual Saving</div>
+    <div class="kpi-sub" id="kpi-saving-annual-sub"></div>
+  </div>
+  <div class="kpi-card" style="border:2px solid #D6E4F0;">
+    <div class="kpi-value" id="kpi-human-monthly">$0</div>
+    <div class="kpi-label">Human Monthly Cost</div>
+    <div class="kpi-sub" id="kpi-human-monthly-sub"></div>
+  </div>
+</div>
+
+<!-- Breakdown -->
+<div class="breakdown-grid">
+  <div class="card">
+    <div class="card-title"><span class="icon">&#9776;</span> Cost Breakdown / Invocation</div>
+    <table class="breakdown-table" id="breakdown-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Cost (AUD)</th>
+          <th>%</th>
+          <th class="bar-cell"></th>
+        </tr>
+      </thead>
+      <tbody id="breakdown-body"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <span class="icon">&#128200;</span> Token Flow by Cycle
+      <span class="info-trigger" id="cache-info-btn">
+        <span class="info-icon">?</span>
+        <div class="info-tooltip" id="cache-tooltip">
+          <div class="tooltip-title">Cache Behavior</div>
+          <p>Each cycle: <strong>BeforeModelCall &rarr; Model Call &rarr; AfterModelCall</strong></p>
+          <p>Each completed cycle includes both the user input AND the assistant's response.</p>
+          <div class="tooltip-code">
+After Cycle 1 completes:
+  Full context: [System Prompt + Tools + User1 + Asst1]
+  Cache Read: 0, Cache Write: 0
+  No caching yet - Bedrock waits for meaningful prefix
+
+After Cycle 2 completes:
+  Full context: [System Prompt + Tools + User1 + Asst1 + User2 + Asst2]
+  Cache Read: 0, Cache Write: [System Prompt + Tools + User1 + Asst1]
+  Writing entire Cycle 1 context to cache
+
+After Cycle 3 completes:
+  Full context: [... + User2 + Asst2 + User3 + Asst3]
+  Cache Read: [System + Tools + User1 + Asst1] (cached prefix)
+  Cache Write: [User2 + Asst2] (new exchange only)
+
+After Cycle 4 completes:
+  Cache Read: [... User1 + Asst1 + User2 + Asst2] (growing prefix)
+  Cache Write: [User3 + Asst3] (new exchange only)
+
+After Cycle 5 completes:
+  Cache Read: [... + User3 + Asst3] (growing prefix)
+  Cache Write: [User4 + Asst4] (new exchange only)
+          </div>
+          <p class="tooltip-summary"><strong>How it works:</strong> Bedrock waits until there's a meaningful conversation prefix before caching (typically after first exchange). Once cached, the prefix is reused at 90% discount. New turns get incrementally added to the cache for future requests.</p>
+        </div>
+      </span>
+    </div>
+    <table class="cycle-table" id="cycle-table">
+      <thead>
+        <tr>
+          <th>Cycle</th>
+          <th>Input</th>
+          <th>Cache Write</th>
+          <th>Cache Read</th>
+          <th>Output</th>
+          <th>Cost (AUD)</th>
+        </tr>
+      </thead>
+      <tbody id="cycle-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div class="card">
+    <div class="footer-title">Assumptions &amp; Sources</div>
+    <div class="footer-text">
+      <strong>AgentCore pricing:</strong> <a href="https://aws.amazon.com/bedrock/agentcore/pricing/" target="_blank">aws.amazon.com/bedrock/agentcore/pricing</a> &mdash;
+      <strong>Bedrock model pricing:</strong> <a href="https://aws.amazon.com/bedrock/pricing/" target="_blank">aws.amazon.com/bedrock/pricing</a> (Asia Pacific Sydney, April 2026).
+      <br>
+      All prices from published AWS rate cards (USD), converted to AUD at the rate defined in config.js.
+      AgentCore Runtime uses active resource consumption billing &mdash; you only pay for actual CPU usage; I/O wait (LLM responses, tool/API calls, DB queries) incurs no CPU charge. Memory billed on peak consumption per second (128 MB minimum). Billing spans microVM boot through shutdown, including system overhead. Storage (ECR/S3) and network data transfer billed separately at standard rates.
+      <br>
+      <em>With a better understanding of the use case, we can provide a more accurate calculation of the AWS consumption costs.</em>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+// ── References from config.js ──
+const MODEL_PRICING = CONFIG.models;
+const AC = CONFIG.agentCore;
+const PRESETS = CONFIG.presets;
+const AUD_RATE = CONFIG.audRate;
+
+// ── State helpers ──
+function getToggleVal(groupId) {
+  const active = document.querySelector(`#${groupId} .toggle-btn.active`);
+  return active ? active.dataset.val : null;
+}
+
+function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function ival(id) { return parseInt(document.getElementById(id).value) || 0; }
+function isCapOn(capId) {
+  const cb = document.querySelector(`#cap-${capId} input[type="checkbox"]`);
+  return cb && cb.checked;
+}
+
+// ── Format helpers ──
+function fmtUSD(n) {
+  if (Math.abs(n) >= 1000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  if (Math.abs(n) >= 1) return '$' + n.toFixed(2);
+  if (Math.abs(n) >= 0.01) return '$' + n.toFixed(4);
+  return '$' + n.toFixed(6);
+}
+function fmtAUD(n, rate) {
+  const aud = n * rate;
+  if (Math.abs(aud) >= 1000) return '$' + aud.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  if (Math.abs(aud) >= 1) return '$' + aud.toFixed(2);
+  if (Math.abs(aud) >= 0.01) return '$' + aud.toFixed(4);
+  return '$' + aud.toFixed(6);
+}
+function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+function fmtTokens(n) { return n.toLocaleString('en-US'); }
+
+// ── Main calculation ──
+function calculate() {
+  const invocations = ival('invocations');
+  const wallclock = ival('wallclock');
+  const cpuRatio = val('cpuratio') / 100;
+  const audRate = AUD_RATE;
+  const modelKey = document.getElementById('model').value;
+  const inferType = getToggleVal('inference-type');
+  const cacheSetting = getToggleVal('caching');
+  const memStrategy = getToggleVal('mem-strategy');
+
+  const promptTokens = ival('prompt-tokens');
+  const newPerCycle = ival('new-tokens');
+  const outputPerCycle = ival('output-tokens');
+  const cycles = ival('cycles');
+
+  // Get model rates
+  const mRates = MODEL_PRICING[modelKey][inferType];
+  const inputRate = mRates.input / 1e6;    // per token
+  const outputRate = mRates.output / 1e6;
+  const cacheReadRate = mRates.cacheRead / 1e6;
+  let cacheWriteRate = 0;
+  if (cacheSetting === '5min') cacheWriteRate = mRates.cache5m / 1e6;
+  else if (cacheSetting === '1hr') cacheWriteRate = mRates.cache1h / 1e6;
+  const cachingOn = cacheSetting !== 'off';
+
+  // ── Bedrock token cost by cycle ──
+  // Cycle = BeforeModelCall -> Model Call -> AfterModelCall
+  //
+  // Cycle 1: All regular input (system prompt + tools + user). No caching yet.
+  // Cycle 2: Cache Write = entire cycle 1 context (prompt + input + output).
+  //          Cache Read = 0. Input = only new tokens.
+  // Cycle 3+: Cache Read = prev_cacheRead + prev_cacheWrite (growing prefix).
+  //           Cache Write = previous cycle's new exchange (input + output).
+  //           Input = only new tokens.
+  const cycleData = [];
+  let totalBedrockCost = 0;
+  let prevCacheRead = 0;
+  let prevCacheWrite = 0;
+
+  for (let c = 1; c <= cycles; c++) {
+    let inputTk = 0, cacheWriteTk = 0, cacheReadTk = 0, outputTk = outputPerCycle;
+    let cycleCost = 0;
+
+    if (c === 1) {
+      // Cycle 1: everything is regular input, no cache yet
+      inputTk = promptTokens + newPerCycle;
+      cycleCost = inputTk * inputRate + outputTk * outputRate;
+    } else if (cachingOn) {
+      inputTk = newPerCycle;
+
+      if (c === 2) {
+        // Cycle 2: write entire cycle 1 context to cache, no reads yet
+        cacheReadTk = 0;
+        cacheWriteTk = promptTokens + newPerCycle + outputPerCycle;
+      } else {
+        // Cycle 3+: read growing cached prefix, write previous cycle's exchange
+        cacheReadTk = prevCacheRead + prevCacheWrite;
+        cacheWriteTk = newPerCycle + outputPerCycle;
+      }
+
+      cycleCost = inputTk * inputRate
+                + cacheReadTk * cacheReadRate
+                + cacheWriteTk * cacheWriteRate
+                + outputTk * outputRate;
+    } else {
+      // No caching: full context regrows each cycle
+      inputTk = promptTokens + c * newPerCycle + (c - 1) * outputPerCycle;
+      cycleCost = inputTk * inputRate + outputTk * outputRate;
+    }
+
+    prevCacheRead = cacheReadTk;
+    prevCacheWrite = cacheWriteTk;
+    cycleData.push({ cycle: c, input: inputTk, cacheWrite: cacheWriteTk, cacheRead: cacheReadTk, output: outputTk, cost: cycleCost });
+    totalBedrockCost += cycleCost;
+  }
+
+  // ── AgentCore costs ──
+  const activeSecs = wallclock * cpuRatio;
+  const costs = {};
+
+  // Runtime (always on)
+  const rtVcpu = ival('rt-vcpu');
+  const rtMem = ival('rt-mem');
+  costs.runtime = (rtVcpu * activeSecs * AC.cpu / 3600) + (rtMem * wallclock * AC.mem / 3600);
+
+  // Browser
+  costs.browser = 0;
+  if (isCapOn('browser')) {
+    const brSecs = ival('br-secs');
+    costs.browser = (ival('br-vcpu') * brSecs * AC.cpu / 3600) + (ival('br-mem') * brSecs * AC.mem / 3600);
+  }
+
+  // Code Interpreter
+  costs.code = 0;
+  if (isCapOn('code')) {
+    const ciSecs = ival('ci-secs');
+    costs.code = (ival('ci-vcpu') * ciSecs * AC.cpu / 3600) + (ival('ci-mem') * ciSecs * AC.mem / 3600);
+  }
+
+  // Gateway
+  costs.gateway = 0;
+  if (isCapOn('gateway')) {
+    const gwApiCalls = ival('gw-api');
+    const gwSearchCalls = ival('gw-search');
+    const gwTools = ival('gw-tools');
+    costs.gateway = (gwApiCalls * AC.gwApi / 1000) + (gwSearchCalls * AC.gwSearch / 1000);
+    // Tool indexing is monthly, amortise per invocation
+    if (invocations > 0) {
+      costs.gateway += (gwTools * AC.gwIndex / 100) / invocations;
+    }
+  }
+
+  // Memory
+  costs.memory = 0;
+  if (isCapOn('memory')) {
+    const events = ival('mem-events');
+    const records = ival('mem-records');
+    const retrievals = ival('mem-retrieval');
+    const storageRate = memStrategy === 'builtin' ? AC.memLongBuiltin : AC.memLongSelf;
+    costs.memory = (events * AC.memShortTerm / 1000) + (retrievals * AC.memRetrieval / 1000);
+    // Storage is monthly, amortise per invocation
+    if (invocations > 0) {
+      costs.memory += (records * storageRate / 1000) / invocations;
+    }
+  }
+
+  const totalAgentCore = costs.runtime + costs.browser + costs.code + costs.gateway + costs.memory;
+  const totalPerInvocation = totalBedrockCost + totalAgentCore;
+  const monthlyCost = totalPerInvocation * invocations;
+  const annualCost = monthlyCost * 12;
+  const bedrockPct = totalPerInvocation > 0 ? totalBedrockCost / totalPerInvocation : 0;
+
+  // ── Update capability cost labels (AUD) ──
+  document.getElementById('cost-runtime').textContent = fmtAUD(costs.runtime, audRate);
+  ['browser', 'code', 'gateway', 'memory'].forEach(cap => {
+    const el = document.getElementById(`cost-${cap}`);
+    if (isCapOn(cap)) {
+      el.textContent = fmtAUD(costs[cap], audRate);
+      el.classList.add('has-cost');
+    } else {
+      el.textContent = '-';
+      el.classList.remove('has-cost');
+    }
+  });
+
+  // ── KPI cards (AUD) ──
+  document.getElementById('kpi-bedrock').textContent = fmtAUD(totalBedrockCost, audRate);
+  document.getElementById('kpi-agentcore').textContent = fmtAUD(totalAgentCore, audRate);
+  document.getElementById('kpi-total').textContent = fmtAUD(totalPerInvocation, audRate);
+  document.getElementById('kpi-monthly').textContent = fmtAUD(monthlyCost, audRate);
+  document.getElementById('kpi-annual').textContent = fmtAUD(annualCost, audRate);
+  document.getElementById('kpi-pct').textContent = fmtPct(bedrockPct);
+
+  // ── Human comparison ──
+  const humanOn = document.getElementById('human-toggle').checked;
+  document.getElementById('human-bar').style.display = humanOn ? '' : 'none';
+  if (humanOn) {
+    const humanRate = ival('human-rate');   // AUD/hr
+    const humanMins = ival('human-time');   // minutes per task
+    const humanPerTask = humanRate * (humanMins / 60);  // AUD
+    const agentPerTaskAUD = totalPerInvocation * audRate;
+    const ratio = agentPerTaskAUD > 0 ? humanPerTask / agentPerTaskAUD : 0;
+    const savingPerTask = humanPerTask - agentPerTaskAUD;
+    const savingMonthly = savingPerTask * invocations;
+    const savingAnnual = savingMonthly * 12;
+    const humanMonthly = humanPerTask * invocations;
+
+    document.getElementById('kpi-human-task').textContent = '$' + humanPerTask.toFixed(0);
+    document.getElementById('kpi-human-task-sub').textContent = humanMins + ' min @ $' + humanRate + '/hr';
+    document.getElementById('kpi-agent-task').textContent = fmtAUD(totalPerInvocation, audRate);
+    document.getElementById('kpi-agent-task-sub').textContent = invocations.toLocaleString() + ' invocations/mo';
+    document.getElementById('kpi-ratio').textContent = ratio >= 1 ? Math.round(ratio).toLocaleString() + 'x' : '<1x';
+    document.getElementById('kpi-saving-monthly').textContent = '$' + Math.round(savingMonthly).toLocaleString();
+    document.getElementById('kpi-saving-monthly-sub').textContent = invocations.toLocaleString() + ' invocations/mo';
+    document.getElementById('kpi-saving-annual').textContent = '$' + Math.round(savingAnnual).toLocaleString();
+    document.getElementById('kpi-saving-annual-sub').textContent = '$' + Math.round(humanMonthly * 12).toLocaleString() + ' human cost avoided';
+    document.getElementById('kpi-human-monthly').textContent = '$' + Math.round(humanMonthly).toLocaleString();
+    document.getElementById('kpi-human-monthly-sub').textContent = invocations.toLocaleString() + ' tasks @ $' + humanPerTask.toFixed(0) + '/task';
+  }
+
+  // ── Breakdown table ──
+  const breakdownItems = [
+    { name: 'Bedrock (' + MODEL_PRICING[modelKey].name + ')', cost: totalBedrockCost, cls: 'bedrock' },
+    { name: 'AgentCore Runtime', cost: costs.runtime, cls: '' },
+  ];
+  if (isCapOn('browser')) breakdownItems.push({ name: 'AgentCore Browser', cost: costs.browser, cls: '' });
+  if (isCapOn('code')) breakdownItems.push({ name: 'AgentCore Code Interpreter', cost: costs.code, cls: '' });
+  if (isCapOn('gateway')) breakdownItems.push({ name: 'AgentCore Gateway', cost: costs.gateway, cls: '' });
+  if (isCapOn('memory')) breakdownItems.push({ name: 'AgentCore Memory', cost: costs.memory, cls: '' });
+
+  const maxCost = Math.max(...breakdownItems.map(i => i.cost));
+  let html = '';
+  breakdownItems.forEach(item => {
+    const pct = totalPerInvocation > 0 ? item.cost / totalPerInvocation : 0;
+    const barW = maxCost > 0 ? (item.cost / maxCost * 100) : 0;
+    html += `<tr>
+      <td>${item.name}</td>
+      <td>${fmtAUD(item.cost, audRate)}</td>
+      <td>${fmtPct(pct)}</td>
+      <td class="bar-cell"><div class="mini-bar"><div class="mini-bar-fill ${item.cls}" style="width:${barW}%"></div></div></td>
+    </tr>`;
+  });
+  html += `<tr class="total">
+    <td>Total</td>
+    <td>${fmtAUD(totalPerInvocation, audRate)}</td>
+    <td>100%</td>
+    <td></td>
+  </tr>`;
+  document.getElementById('breakdown-body').innerHTML = html;
+
+  // ── Cycle table ──
+  let cycleHtml = '';
+  let totInput = 0, totCW = 0, totCR = 0, totOut = 0, totCost = 0;
+  cycleData.forEach(cd => {
+    totInput += cd.input; totCW += cd.cacheWrite; totCR += cd.cacheRead; totOut += cd.output; totCost += cd.cost;
+    cycleHtml += `<tr>
+      <td>Cycle ${cd.cycle}</td>
+      <td>${fmtTokens(cd.input)}</td>
+      <td>${cd.cacheWrite > 0 ? fmtTokens(cd.cacheWrite) : '-'}</td>
+      <td>${cd.cacheRead > 0 ? fmtTokens(cd.cacheRead) : '-'}</td>
+      <td>${fmtTokens(cd.output)}</td>
+      <td>${fmtAUD(cd.cost, audRate)}</td>
+    </tr>`;
+  });
+  cycleHtml += `<tr class="total">
+    <td>Total</td>
+    <td>${fmtTokens(totInput)}</td>
+    <td>${totCW > 0 ? fmtTokens(totCW) : '-'}</td>
+    <td>${totCR > 0 ? fmtTokens(totCR) : '-'}</td>
+    <td>${fmtTokens(totOut)}</td>
+    <td>${fmtAUD(totCost, audRate)}</td>
+  </tr>`;
+  document.getElementById('cycle-body').innerHTML = cycleHtml;
+}
+
+// ── Event wiring ──
+// Slider value displays
+['invocations', 'wallclock', 'cpuratio', 'cycles'].forEach(id => {
+  const el = document.getElementById(id);
+  const display = document.getElementById('v-' + (id === 'cpuratio' ? 'cpuratio' : id));
+  el.addEventListener('input', () => {
+    let v = el.value;
+    if (id === 'cpuratio') v += '%';
+    if (id === 'invocations') v = parseInt(v).toLocaleString();
+    display.textContent = v;
+    calculate();
+  });
+});
+
+// All number inputs
+document.querySelectorAll('input[type="number"]').forEach(el => {
+  el.addEventListener('input', calculate);
+});
+
+// Select
+document.getElementById('model').addEventListener('change', calculate);
+
+// Toggle groups
+document.querySelectorAll('.toggle-group').forEach(group => {
+  group.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      calculate();
+    });
+  });
+});
+
+// Presets
+document.getElementById('preset').addEventListener('click', (e) => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn) return;
+  const p = PRESETS[btn.dataset.val];
+  if (!p) return;
+  document.getElementById('prompt-tokens').value = p.prompt;
+  document.getElementById('new-tokens').value = p.newPerCycle;
+  document.getElementById('output-tokens').value = p.outputPerCycle;
+  document.getElementById('cycles').value = p.cycles;
+  document.getElementById('v-cycles').textContent = p.cycles;
+  calculate();
+});
+
+// Human comparison toggle + sliders
+document.getElementById('human-toggle').addEventListener('change', () => {
+  document.getElementById('human-fields').style.display =
+    document.getElementById('human-toggle').checked ? 'block' : 'none';
+  calculate();
+});
+['human-rate', 'human-time'].forEach(id => {
+  const el = document.getElementById(id);
+  const display = document.getElementById('v-' + (id === 'human-rate' ? 'humanrate' : 'humantime'));
+  el.addEventListener('input', () => {
+    display.textContent = id === 'human-rate' ? '$' + el.value : el.value;
+    calculate();
+  });
+});
+
+// Capability toggles
+document.querySelectorAll('.capability input[type="checkbox"][data-cap]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const cap = cb.closest('.capability');
+    if (cb.checked) {
+      cap.classList.add('active');
+    } else {
+      cap.classList.remove('active');
+    }
+    calculate();
+  });
+});
+
+// Initial calculation
+calculate();
+</script>
+</body>
+</html>
